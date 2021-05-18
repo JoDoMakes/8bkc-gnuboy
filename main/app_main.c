@@ -71,7 +71,7 @@ static int fccallback(int button, char **glob, char **desc, void *usrptr) {
 #define STATE_TMP_FILE "__gnuboy_statefile.tmp"
 
 void gnuboyTask(void *pvParameters) {
-	char rom[128]="";
+	char rom[128]="TheHorribleDemon2.gbc";
 	nvs_handle nvsh=kchal_get_app_nvsh();;
 	//Let other threads start
 	vTaskDelay(200/portTICK_PERIOD_MS);
@@ -79,8 +79,8 @@ void gnuboyTask(void *pvParameters) {
 	int ret;
 	int loadState=1;
 
-	unsigned int size=sizeof(rom);
-	esp_err_t r=nvs_get_str(nvsh, "rom", rom, &size);
+	//unsigned int size=sizeof(rom);
+	esp_err_t r=ESP_OK;//nvs_get_str(nvsh, "rom", rom, &size);
 
 	while(1) {
 		int emuRan=0;
@@ -96,7 +96,7 @@ void gnuboyTask(void *pvParameters) {
 			//Run emu
 			kchal_sound_mute(0);
 			ret=gnuboymain(rom, loadState);
-			//Note: ret will never be EMU_RUN_RESET (or EMU_RUN_CONT)  as that is handled inside the 
+			//Note: ret will never be EMU_RUN_RESET (or EMU_RUN_CONT)  as that is handled inside the
 			//emulator code itself (ref emu_run)
 			emuRan=1;
 		} else {
@@ -188,13 +188,15 @@ void startEmuHook() {
 
 void app_main()
 {
+	appfsInit(0x43, 3);
+	appfsDump();
 	spi_flash_mmap_handle_t hbootrom;
 	esp_err_t err;
 	esp_log_level_set("*", ESP_LOG_INFO);
 	esp_log_level_set("appfs", ESP_LOG_DEBUG);
 	kchal_init();
 	nvs_flash_init();
-	
+
 	hw.gbbootromdata=NULL;
 	if (appfsExists(BOOTROM_NAME)) {
 		appfs_handle_t fd=appfsOpen(BOOTROM_NAME);
@@ -211,5 +213,3 @@ void app_main()
 	xTaskCreatePinnedToCore(&gnuboyTask, "gnuboyTask", 1024*6, NULL, 5, NULL, 0);
 	xTaskCreatePinnedToCore(&monTask, "monTask", 1024*2, NULL, 7, NULL, 0);
 }
-
-
